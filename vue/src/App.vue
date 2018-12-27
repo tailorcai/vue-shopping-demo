@@ -27,7 +27,7 @@ export default {
     };
   },
   computed: {
-    ...mapGetters(["active"])
+    ...mapGetters(["active", 'isLogon'])
   },
 
   methods: {
@@ -45,17 +45,17 @@ export default {
     },
 
     ...mapMutations({
-      setName: "USERNAME"
+      setUserInfo: "USERINFO"
     })
   },
 
   async created() {
+    if( !this.isLogon ) return
     try {
-      const { data } = await this.Api.keeplogin();
-      if (data.code == 200) {
-        
-        this.setName(data.userInfo);
-      }
+      const { data } = await this.Api.user();
+
+        this.setUserInfo(data[0]);
+
     } catch (error) {
       this.Toast("网络错误");
     }

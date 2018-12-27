@@ -11,7 +11,7 @@
                         <div class="icon"><van-icon name="location" class="location"/></div>
                         <div class="address-cont">
                             <p class="name">收货人: {{temporaryAddress.name || defaultAdd.name}} <span>{{temporaryAddress.tel || defaultAdd.tel}}</span></p>
-                            <p class="address-e">收货地址: {{temporaryAddress.address || defaultAdd.address}}</p>
+                            <p class="address-e">收货地址: {{temporaryAddress.addressDetail || defaultAdd.address}}</p>
                             <p class="no">(收货不便时,可选择免费待收货服务)</p>
                         </div>
                         <div class="icon2"><van-icon name="arrow" class="location"/></div>
@@ -61,7 +61,7 @@ export default {
             let num = 0
             if (this.shopOrderList.length) {
                     this.shopOrderList.forEach( item => {
-                    num += item.present_price * item.count
+                    num += item.price * item.qty
                 })
                 return Number( num.toFixed(2) * 100)
             }
@@ -84,9 +84,10 @@ export default {
         async getDefaultAddress() {
             try {
                 const {data} = await this.Api.getDefaultAddress()
-                if (data.code == 200) {
-                    this.defaultAdd = data.defaultAdd
-                }
+                //if (data.code == 200) {
+                    this.defaultAdd = data[0]
+                    this.defaultAdd._id = this.defaultAdd.id
+                //}
             } catch (error) {
                 this.Toast('网络错误')
             }
@@ -113,7 +114,7 @@ export default {
             console.log(this.shopOrderList);
             
             this.shopOrderList.forEach( item => {
-                orderId.push(item.cid)
+                orderId.push(item.id)
             })
             
             try {
@@ -121,18 +122,19 @@ export default {
                     address:  this.temporaryAddress.address || this.defaultAdd.address,
                     tel: this.temporaryAddress.tel || this.defaultAdd.tel,
                     orderId,
-                    totalPrice: (this.price / 100).toFixed(2),
-                    idDirect: this.shopOrderList[0].idDirect,
-                    count: this.shopOrderList[0].count
+                    amount: (this.price / 100).toFixed(2),
+                    note: 'comments'
+                    //idDirect: this.shopOrderList[0].idDirect,
+                    //count: this.shopOrderList[0].count
                 })
-                if (data.code == 200) {
+                //if (data.code == 200) {
                     this.isLoading = false
                     this.Toast(data.msg)
                     setTimeout(() => {
                         this.setShopList([])
                         this.$router.push({path: '/'})
                     }, 2000);
-                }
+                //}
             } catch (err) {
                 this.isLoading = false
                 this.Toast('网络错误')

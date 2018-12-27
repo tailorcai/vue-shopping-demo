@@ -1,7 +1,64 @@
 import axios from 'axios'
+import store from '@/store'
 
 // 所有接口的api封装
 export default class Api {
+    static searchTransformer (r)  {
+        return r.map( item => {
+            return { id: item.id,
+            name: item.name }
+        })
+   
+    };
+
+    static detailTransformer(r) {
+        return r
+    }
+
+    static Get(path, transformer) {
+        if( path.indexOf('?')> 0)
+            path = path + '&format=json'
+        else    
+            path = path + '?format=json'
+        
+        let headers;
+        if( store.state.token != null )
+            headers = {
+                Authorization: 'Token '+store.state.token
+            }
+        else    
+            headers = null
+        return new Promise((resolve, reject) => {
+            axios.get(path,  {
+                    headers: headers
+                }).then( r => {
+                if( transformer != null ) 
+                    r.data = transformer(r.data)
+                resolve( r )
+            }).catch( error => {
+                reject( error )
+            })
+        })
+    }
+
+    static Post(path,data,action="post") {
+        let headers = {
+            Authorization: 'Token '+store.state.token
+        }
+    
+        return new Promise((resolve, reject) => {
+            axios({
+                url: path,
+                method:action,
+                data: data,
+                headers: headers
+            }).then( r => {
+                resolve( r )
+            }).catch( error => {
+                reject( error )
+            })
+        })
+    }
     /**
      * 首页(Home)所有接口
      * recommend            首页的默认数据
@@ -9,17 +66,15 @@ export default class Api {
      * keeplogin            保持登录
      */
     static recommend() {
-        return axios.get('/api/recommend')
+        return Api.Get('/api/recommend/')
     }
 
     static search(value) {
-        return axios.post('/api/search', {
-            value
-        })
+        return Api.Get(`/api/goods/?search=${value}`, Api.searchTransformer)
     }
 
     static keeplogin() {
-        return axios.post('/api/keeplogin')
+        return Api.Post('/api/keeplogin')
     }
     // ===============================================================================================================
     /**
@@ -27,7 +82,9 @@ export default class Api {
      * category 分类查询  参数id：默认分类的id
      */
     static category(id) {
-        return axios.get(`/api/classification?mallSubId=${id}`)
+        return Api.Get(`/api/classifications/?category_id=${id}`, r => {
+            return { dataList: r.map( i => { return Api.detailTransformer(i); } ) }
+        })
     }
 
     // ===============================================================================================================
@@ -38,19 +95,22 @@ export default class Api {
      * deleteShop   购物车商品删除      参数 id：需要删除的商品id
      */
     static getCard() {
-        return axios.post(`/api/getCard`)
-    }
-
-    static editCart(count, id, mallPrice) {
-        return axios.post('/api/editCart', {
-            count,
-            id,
-            mallPrice
+        return Api.Get(`/api/cart/items/`, r => {
+            return { shopList: r.map( item => {
+                item.check= false
+                return item
+            }) }
         })
     }
 
+    static editCart(count, id) {
+        return Api.Post(`/api/cart/items/${id}/`, {
+            qty:count
+        },"patch")
+    }
+
     static deleteShop(id) {
-        return axios.post('/api/deleteShop', id)
+        return Api.Post(`/api/cart/items/`, {id}, 'delete')
     }
 
     // ===============================================================================================================
@@ -60,7 +120,7 @@ export default class Api {
      * placeOrder 提交订单 参数：address:收货地址,tel:电话，orderId：所有商品的id，totalPrice：总价格,idDirect:用来判断是购物车结算还是直接购买,count:商品数量
      */
     static placeOrder({ ...args }) {
-        return axios.post('/api/order', args)
+        return Api.Post('/api/placeorder/', args)
     }
 
     // ===============================================================================================================
@@ -73,7 +133,8 @@ export default class Api {
      * addShop          加入购物车             参数：  id:商品的id
      */
     static goodOne(id) {
-        return axios.get(`/api/goods/one?id=${id}`)
+        return Api.Get(`/api/goods/${id}/`,Api.detailTransformer )
+        //return axios.get(`/api/goods/${id}/?format=json`)
     }
 
     static collection(goods) {
@@ -89,7 +150,7 @@ export default class Api {
     }
 
     static addShop(id) {
-        return axios.post(`/api/addShop`, { id })
+        return Api.Post(`/api/cart/items/`, { good:id })
     }
     // ===============================================================================================================
 
@@ -102,23 +163,23 @@ export default class Api {
      * comment  商品评论
      */
     static loginOut() {
-        return axios.post(`/api/loginOut`)
+        //return axios.post(`/api/loginOut`)
     }
 
     static user() {
-        return axios.post(`/api/queryUser`)
+        return Api.Get(`/api/profile/`)
     }
 
     static saveUser({ ...args }) {
-        return axios.post(`/api/saveUser`, args)
+        return Api.Post(`/api/profile/1/`, args, 'PUT')
     }
 
     static getOrderNum() {
-        return axios.get(`/api/myOrder/orderNum`)
+        return Api.Get(`/api/orderNum/`)
     }
 
     static comment({ ...args }) {
-        return axios.post(`/api/goodsOne/comment`, args)
+        return axios.post(`/api/cart/comment`, args)
     }
     // ===============================================================================================================
     /**
@@ -139,25 +200,28 @@ export default class Api {
      * evaluateOne          查询单条评论    参数： id：商品id，_id：数据库的那条id
      */
     static getAddress() {
-        return axios.get(`/api/getAddress`)
+        return Api.Get(`/api/address/`)
     }
 
     static getDefaultAddress() {
-        return axios.get(`/api/getDefaultAddress`)
+        return Api.Get(`/api/address/?is_default=true`)
     }
 
     static setDefaultAddress(id) {
-        return axios.post(`/api/setDefaultAddress`, { id })
+        return Api.Post(`/api/address/${id}/`, { id:id, is_default:true }, 'patch')
     }
 
-    static postAddress({ ...args }) {
-        return axios.post(`/api/address`, args)
+    static postAddress(id, args) {
+        if( id == undefined )    
+            return Api.Post(`/api/address/`, args)
+        else
+            return Api.Post(`/api/address/${id}/`, args, 'put')
     }
 
     static deleteAddress(id) {
-        return axios.post('/api/deleteAddress', {
+        return Api.Post(`/api/address/${id}`, {
             id
-        })
+        },'delete')
     }
 
     static getCollection() {
@@ -172,14 +236,14 @@ export default class Api {
     }
 
     static login(nickname, password) {
-        return axios.post('/api/login', {
-            nickname,
+        return axios.post('/api-token-auth/', {
+            username:nickname,
             password
         })
     }
 
     static getMyOrder() {
-        return axios.get(`/api/myOrder`)
+        return Api.Get(`/api/orders/`)
     }
 
     static alreadyEvaluated(page = 1) {

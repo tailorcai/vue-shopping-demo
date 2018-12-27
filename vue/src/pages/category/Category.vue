@@ -4,8 +4,8 @@
         <div class="content" >
            <div class="left" ref="left">
                 <ul>
-                    <li v-for='(val,index) in category' :key='val.mallCategoryId'  :class="{active:leftTabIndex==index}" @click="item(val,index)">
-                        {{val.mallCategoryName}}
+                    <li v-for='(val,index) in category' :key='val.id'  :class="{active:leftTabIndex==index}" @click="item(val,index)">
+                        {{val.name}}
                     </li>
                 </ul>
             </div>
@@ -14,7 +14,7 @@
                         <van-tabs v-model="active" @click="onClick" >
                                 <Scroll  v-show="!showFlag" :data='dataList' class="scroll" @scroll="scroll" :listenScroll='listenScroll' ref="scroll" :bounce='bounce' >
                                     <div>
-                                        <van-tab v-for="val in list || category[0].bxMallSubDto" :title="val.mallSubName" :key="val.mallSubId">
+                                        <van-tab v-for="val in list || category[0].children" :title="val.name" :key="val.id">
                                             <GoodsList :list='dataList' @details='details'/>
                                         </van-tab>
                                     </div>
@@ -55,7 +55,7 @@ export default {
             },
             listenScroll: true,
             isLoading: false,
-            defaultId : '2c9f6c946016ea9b016016f79c8e0000',
+            defaultId : '1',
             Category: false
         }
     },
@@ -74,16 +74,16 @@ export default {
         },
         item(val,i) {
             this.active = 0
-            this.list = val.bxMallSubDto
+            this.list = val.children
             if (this.leftTabIndex == i) return
             this.leftTabIndex = i
-            this.getList(val.bxMallSubDto[0].mallSubId)
+            this.getList(val.children[0].id)
             this.$refs.scroll.scrollTo(0,0,300)
         },
 
         onClick(index) {
             this.dataList = []
-            const mallSubId = this.category[this.leftTabIndex].bxMallSubDto[index].mallSubId
+            const mallSubId = this.category[this.leftTabIndex].children[index].id
             this.getList(mallSubId)
         },
 
@@ -96,10 +96,16 @@ export default {
                 this.dataList = []
                 this.showFlag = true
                 const { data } = await this.Api.category(id)
-                if (data.code == 200) {
+                //if (data.code == 200) {
+                    console.log( data )
                     this.showFlag = false
                     this.dataList = data.dataList
-                }
+                    // data.dataList.forEach( r => {
+                    //     console.log( r.id, r.name )
+                    // })
+                    console.log( 'done')
+                    //console.log( data )
+                //}
             } catch (error) {
                 this.showFlag = false
                 this.Toast('网络错误')
@@ -107,6 +113,7 @@ export default {
         },
 
         details(val) {
+            console.log( val )
             this.setBrowse(val)     // 加入最近浏览
             this.setGoodDetails(val)
             this.$router.push({ path: `/category/details`, query: { id: val.id } })
@@ -121,9 +128,9 @@ export default {
         async getCategory() {
             if (!this.category.length) {
                 const { data } = await this.Api.recommend()
-                if (data.code == 200) {
-                    this.setTab(data.data.category)
-                }
+                //if (data.code == 200) {
+                    this.setTab(data.category)
+                //}
             }
         },
 

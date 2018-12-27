@@ -55,6 +55,7 @@ export default {
 
         onEdit(item, index) {
             this.setAddress(item)
+            console.log( item )
             this.$router.push('/user/addressEdit')
         },
 
@@ -96,12 +97,13 @@ export default {
         try {
             this.showFlag = true
             const {data} = await this.Api.getAddress()
-            if (data.code == 200) {
+            //if (data.code == 200) {
                 this.showFlag = false
-                this.list = data.address.reverse()
+                this.list = data.reverse()
                 let defaultAddress
                 for (let i = 0; i < this.list.length; i++) {
-                    if (this.list[i].isDefault == true) {
+                    this.list[i]._id = this.list[i].id
+                    if (this.list[i].is_default == true) {
                         defaultAddress = this.list[i]
                         defaultAddress.id = '1'
                         this.list.splice(i,1)
@@ -110,7 +112,7 @@ export default {
                         this.list[i].id = String( i+2)
                     }
                 }                                
-            }
+            //}
         } catch (error) {
             console.log(error);
             this.Toast('网络错误')

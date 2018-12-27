@@ -26,7 +26,7 @@
 
 <script>
 import Back from 'pages/other/Back'
-import {mapMutations} from 'vuex'
+import {mapMutations, mapActions} from 'vuex'
 import {Toast} from 'vant'
 import {goBack} from 'js/mixin'
 export default {
@@ -65,7 +65,7 @@ export default {
                 this.regLoding = true
                 const {data} = await this.Api.register(this.nickname,this.password)
                 if (data.code == 200) {
-                    this.setName(data.userInfo)
+                    this.setUserInfo(data.userInfo)
                     setTimeout(() => {
                         this.$router.go(-1)
                     }, 1500);
@@ -82,15 +82,20 @@ export default {
                 try {
                     this.loginLoding = true
                     const {data} = await this.Api.login(this.nickname,this.password)
-                    if (data.code == 200) {
-                        this.setName(data.userInfo)
+                    //if (data.code == 200) {
+                        this.setToken(data.token)
+                        {
+                            const {data} = await this.Api.user()
+                            this.setUserInfo( data[0] )
+                        }
                         setTimeout(() => {
                             this.$router.go(-1)
                         }, 1500);
-                    }
+                    //}
                     this.loginLoding = false
                     this.Toast(data.msg);
                 } catch (error) {
+                    console.error(error)
                     this.Toast('网络错误')
                     this.loginLoding = false
                 }
@@ -100,9 +105,9 @@ export default {
         },
 
         ...mapMutations({
-            setName: 'USERNAME'
-        })
-
+            setUserInfo: 'USERINFO'
+        }),
+        ...mapActions(['setToken']),
     },
  
 }

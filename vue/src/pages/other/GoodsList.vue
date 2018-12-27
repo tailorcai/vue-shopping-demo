@@ -2,14 +2,14 @@
     <!-- 商品列表组件 -->
         <ul>
         <li v-for="(item,index) in list" :key="item._id || item.id" class="good-item border-bottom" @click="details(item)">
-            <img :src="item.image || item.image_path" :onerror="defaultImg" :class="{img2:isBrowse || isCollection || isOrder}">
+            <img :src="imageUrl(item)" :onerror="defaultImg" :class="{img2:isBrowse || isCollection || isOrder}">
             <div>
-                <p class="p1">{{item.name}}</p>
+                <p class="p1">{{item.name || item.good && item.good.name}}</p>
                 <p class="p2">
-                    <span class="pic" v-if="isOrder">￥{{(item.present_price * item.count).toFixed(2)}}</span>
+                    <span class="pic" v-if="isOrder">￥{{(item.price * item.qty).toFixed(2)}}</span>
                     <span class="pic" v-else>￥{{item.present_price}}</span>
                     <span class="orl-pic">{{item.orl_price}}</span>
-                    <span class="count" v-if="isOrder">x{{item.count}}</span>
+                    <span class="count" v-if="isOrder">x{{item.qty}}</span>
                 </p>
                 
             </div>
@@ -65,6 +65,10 @@ export default {
         // 清除单条浏览记录
         close(item,index) {
             this.$emit('close',item,index)
+        },
+
+        imageUrl(good) {
+            return 'https://img2.guolele.com/' + ( good.pic_url || good.good.pic_url );
         }
     }
 }

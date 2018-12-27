@@ -21,14 +21,14 @@
                     <div class="left">
                         <input type="checkbox"  v-model="val.check" @change="itemChange(val)"/>
                     </div>
-                    <div class="middle"><img :src="val.image_path" :onerror="defaultImg"></div>
+                    <div class="middle"><img :src="imageUrl(val)" :onerror="defaultImg"></div>
                     <div class="right">
-                        <p class="name">{{val.name}}</p>
+                        <p class="name">{{val.good.name}}</p>
                         <div>
-                            <p class="one"><span>￥</span>{{(val.present_price * val.count).toFixed(2)}}</p>
+                            <p class="one"><span>￥</span>{{(val.price * val.qty).toFixed(2)}}</p>
                             <p class="two">
                                 <i class="iconfont icon-jian" @click="editCart('minu',val)"></i>
-                                <span>{{val.count}}</span>
+                                <span>{{val.qty}}</span>
                                 <i @click="editCart('add',val)" class="iconfont icon-jia"></i>
                             </p>
                         </div>
@@ -41,8 +41,8 @@
             <div class="shop">
               <img :src="noShop" alt="">
             </div>
-            <p class="desc">{{!userName?'请先登录噢~~':'您的购物还是空空的哦'}}</p>
-            <p class="desc2" @click='goshop' v-if="userName">去购物</p>
+            <p class="desc">{{!isLogon?'请先登录噢~~':'您的购物还是空空的哦'}}</p>
+            <p class="desc2" @click='goshop' v-if="isLogon">去购物</p>
             <p class="desc2" @click='goLogin' v-else>去登录</p>
         </div>
         <router-view />
@@ -75,20 +75,20 @@ export default {
   },
   computed: {
     totalPrice() {
-      let tatol = 0;
-
+      let total = 0;
+      console.log( this.shopList)
       if (this.shopList.length) {
         this.shopList.forEach(item => {
           if (item.check) {
-            tatol += item.present_price * item.count;
+            total += item.price * item.qty;
           }
         });
-        return tatol.toFixed(2);
+        return total.toFixed(2);
       }
       return 0;
     },
 
-    ...mapGetters(["userName"])
+    ...mapGetters(["isLogon"])
   },
   components: {
     BaseTitle,
@@ -129,13 +129,8 @@ export default {
       try {
         this.showFlag = true;
         const { data } = await this.Api.getCard();
-        if (data.code == -1) {
-          this.isLogin = true;
-          this.showFlag = false;
-        } else {
           this.showFlag = false;
           this.shopList = data.shopList;
-        }
       } catch (error) {
         this.Toast("网络连接失败");
         this.showFlag = false;
@@ -151,26 +146,26 @@ export default {
       console.log(val);
       
       if (flag == "minu") {
-        if (val.count <= 1) {
+        if (val.qty <= 1) {
           return;
         }
-        val.count--;
+        val.qty--;
       } else if (flag == "add") {
-        if (val.count >= 50) {
+        if (val.qty >= 50) {
           this.Toast("最多购买50件噢~~");
           return;
         }
-        val.count++;
+        val.qty++;
       }
-      const mallPrice = (val.present_price * val.count).toFixed(2);
-      this.Api.editCart(val.count, val.cid, mallPrice);
+      const mallPrice = (val.price * val.qty).toFixed(2);
+      this.Api.editCart(val.qty, val.id);
     },
     // 删除商品
     deletes() {
       let id = [];
       this.shopList.forEach(item => {
         if (item.check) {
-          id.push(item.cid);
+          id.push(item.id);
           this.Dialog.confirm({
             title: "提示",
             message: `确认删除商品吗?`
@@ -185,11 +180,11 @@ export default {
     async deleteShop(id) {
       try {
         const { data } = await this.Api.deleteShop(id);
-        if (data.code == 200) {
+        //if (data.code == 200) {
           this.deleteFlag = false;
           this.Toast(data.msg);
           this.getShopList();
-        }
+        //}
       } catch (error) {
         this.Toast("删除失败,网络错误");
       }
@@ -222,6 +217,10 @@ export default {
     goLogin() {
       console.log(1234);
       this.$router.push({ path: "/user/login" });
+    },
+
+    imageUrl(val) {
+        return 'https://img2.guolele.com/' + ( val.good.pic_url  );
     }
   },
   created() {

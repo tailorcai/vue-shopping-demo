@@ -1,8 +1,9 @@
-import {tab,address,recentlyBrowse,city,searchHistory} from 'js/cache'
+import {tab,address,recentlyBrowse,city,searchHistory,token} from 'js/cache'
 const state = {
     category: tab.getTab(),   //分类条目
     goodsDetails: {},   // 商品详情
-    userName: null,       // 用户信息
+    token:token.getToken(),
+    userInfo: { avatar:""},       // 用户信息
     addressInfo: address.getAddress(),    //  保存要修改的地址
     browse: recentlyBrowse.getBrowse(), // 最近浏览
     shopOrderList: [],      // 购物车去结算的时候存入vuex

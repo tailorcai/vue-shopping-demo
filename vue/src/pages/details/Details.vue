@@ -3,11 +3,8 @@
   <div class="goods" >
     <div >
     <van-swipe class="goods-swipe" :autoplay="3000">
-      <van-swipe-item >
-        <img :src="goods.image" :onerror="defaultImg">
-      </van-swipe-item>
-      <van-swipe-item>
-        <img :src="goods.image" :onerror="defaultImg">
+      <van-swipe-item v-for="img in imageList" :key="img">
+        <img :src="imageUrl(img)" :onerror="defaultImg">
       </van-swipe-item>
     </van-swipe>
     <div v-show="!showFlag">
@@ -22,7 +19,9 @@
         <van-col span="6" class="like">{{!isCollectionFlag?'取消收藏':'收藏'}}：<van-icon :name="!isCollectionFlag?'like':'like-o'" @click="collection" class="like-o" :class="{like2:!isCollectionFlag}"/></van-col>
       </van-cell>
     </van-cell-group>
-
+    <van-cell-group>
+      <van-cell v-for="val in propList" :title="val.name" :value="val.real_value" :key="val.name"/>
+    </van-cell-group>
     <van-cell-group class="goods-cell-group">
       <van-cell value="进入店铺" icon="shop" is-link>
         <template slot="title">
@@ -35,7 +34,7 @@
     <div>
        <van-tabs v-model="active"  class="datails-tabs" sticky>
         <van-tab v-for="val in item" :title="val.title" :key="val.id" >
-          <div v-show="active == 0"  v-html="goodsDetails.detail || goods.detail"  class="active-0"></div>
+          <div v-show="active == 0"  v-html="goodsDetails.description || goods.description"  class="active-0"></div>
           <div v-show="active == 1" class="active-1" >
               <div class='comment' v-for="val of comment" :key="val._id">
                 <div class="comment-content">
@@ -118,7 +117,7 @@ export default {
   },
   data() {
     return {
-      goods: { },
+      good: { },
       defaultImg: 'this.src="' + require('img/vue.jpg') + '"',
       active: 0,
       item: [{id:0,title:'商品详情'},{id:1,title:'商品评论'}],
@@ -130,7 +129,21 @@ export default {
   },
   
   computed: {
-      ...mapGetters(['goodsDetails','userName'])
+      ...mapGetters(['goodsDetails','isLogon']),
+      propList() {
+        if( this.goods && this.goods.props ) {
+          return this.goods.props.filter( item => item.real_value != "" && item.real_value !=null && item.level >=10 )
+        }
+        return []
+      },
+      imageList() {
+        if( this.goods && this.goods.props ) {
+          var v = this.goods.props.filter(item=>item.name == "images")[0].real_value
+          if( v.length > 0 )
+            return v.split('|')
+        }
+        return []
+      }
   },
 
   methods: {
@@ -151,15 +164,18 @@ export default {
         
         try {
           const {data} = await this.Api.goodOne(id)
-          if (data.code == 200) {
-            if (data.goodsOne.id) {
-              this.setBrowse(data.goodsOne)
-              this.goods = data.goodsOne
-              this.comment = data.goodsOne.comment
+
+            let goodsOne = data
+            if (goodsOne.id) {
+              this.setBrowse(goodsOne)
+              this.goods = goodsOne
+              //this.comment = goodsOne.comment
               
             }
-          }
+            this.showFlag = false
+          //}
         } catch (error) {
+          console.error( error )
             this.showFlag = false
             this.isCollectionFlag = true
             this.Toast('网络错误')
@@ -169,24 +185,24 @@ export default {
 
     // 查询是否已收藏
     async isCollection(id) {
-      this.showFlag = true
-      const {data} = await this.Api.isCollection(id)
-      if (data.code == 200) {
-        this.showFlag = false
-        if (data.isCollection == 1) {   // 已经收藏收藏
-            this.isCollectionFlag = false
-        } else {
-            this.isCollectionFlag = true
-        }
-      } else {
-        this.showFlag = false
-        this.isCollectionFlag = true
-      }
+      // this.showFlag = true
+      // const {data} = await this.Api.isCollection(id)
+      // if (data.code == 200) {
+      //   this.showFlag = false
+      //   if (data.isCollection == 1) {   // 已经收藏收藏
+      //       this.isCollectionFlag = false
+      //   } else {
+      //       this.isCollectionFlag = true
+      //   }
+      // } else {
+      //   this.showFlag = false
+      //   this.isCollectionFlag = true
+      // }
     },
 
     // 点击收藏
     async collection() {
-      if (!this.userName) {
+      if (!this.isLogon) {
         this.$router.push({path:'/user/login'})
         return
       }
@@ -217,15 +233,16 @@ export default {
 
     // 加入购物车
     async addShops() {
-        if (!this.userName) {
+        if (!this.isLogon) {
             this.$router.push({path:'/user/login'})
             return
         }
         try {
-          const {data} = await this.Api.addShop(this.goodsDetails.goodsId || this.goodsDetails.id)
-          if (data.code == 200) {
+          //console.log( this.goodsDetails )
+          const {data} = await this.Api.addShop( this.goods.id)
+          //if (data.code == 200) {
             this.Toast(data.msg)
-          }
+          //}
         } catch (error) {
           this.Toast('网络错误')
         }
@@ -266,7 +283,9 @@ export default {
     }),
 
     ...mapActions(['setBrowse']),
-
+    imageUrl(url) {
+        return 'https://img2.guolele.com/' + ( url  );
+    },
   },
 
   created() {

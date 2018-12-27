@@ -6,8 +6,11 @@ const matutaions = {
     [types.GOODSDETAILS](state,goodsDetails) {
         state.goodsDetails = goodsDetails
     },
-    [types.USERNAME](state,userName) {
-        state.userName = userName
+    [types.TOKEN](state,token) {
+        state.token = token
+    },    
+    [types.USERINFO](state,user) {
+        state.userInfo = user
     },
     [types.ADDRESSINFO](state,addressInfo) {
         state.addressInfo = addressInfo

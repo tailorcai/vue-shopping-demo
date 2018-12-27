@@ -2,13 +2,13 @@
   <div id="my-warpper">
     <BaseTitle title="会员中心"/>
     <!-- <img class="user-poster" src="https://img.yzcdn.cn/public_files/2017/10/23/8690bb321356070e0b8c4404d087f8fd.png"> -->
-    <div class="avatar" v-if="!userName">
+    <div class="avatar" v-if="!isLogon">
       <img src="http://img4.imgtn.bdimg.com/it/u=198369807,133263955&fm=27&gp=0.jpg" alt srcset>
       <p @click="login">登录/注册</p>
     </div>
     <div class="avatar" v-else>
-      <img :src="userName.avatar">
-      <p class="usename">欢迎您：{{userName.nickname}}</p>
+      <img :src="userInfo.avatar">
+      <p class="usename">欢迎您：{{userInfo.nickname}}</p>
       <p @click="loginOut">退出登录</p>
       <van-icon name="setting" class="setting" @click="setting"/>
     </div>
@@ -21,7 +21,7 @@
       >
         <i class="van-icon" :class="val.icon"></i>
         <span>{{val.title}}</span>
-        <span class="num" v-if="orderNum && orderNum[index]!=0">{{orderNum[index]}}</span>
+        <span class="num" v-if="orderNum && orderNum[index]>0">{{orderNum[index]}}</span>
       </div>
     </div>
     <van-cell-group class="user-group">
@@ -39,7 +39,7 @@
         <div id="setAvatar" class="set-avatar border-bottom">
           <span>头像</span>
           <div>
-            <img v-if="userName" :src="userName.avatar" alt srcset>
+            <img v-if="userInfo" :src="userInfo.avatar" alt srcset>
             <van-icon name="arrow"/>
           </div>
           <div class="cropper">
@@ -160,16 +160,16 @@ export default {
   },
 
   computed: {
-    ...mapGetters(["userName"])
+    ...mapGetters(["userInfo", "isLogon"])
   },
 
   methods: {
+    ...mapMutations({
+            setUserInfo: 'USERINFO'
+        }),
     callback(img) {
       // this.avatar = img;
     },
-    ...mapMutations({
-      setName: "USERNAME"
-    }),
 
     noName() {
       this.Toast("用户名暂时不能修改哟~~");
@@ -180,7 +180,7 @@ export default {
     },
 
     address() {
-      if (this.userName) {
+      if (this.isLogon) {
         this.$router.push({ path: "/user/address" });
       } else {
         this.$router.push({ path: "/user/login" });
@@ -193,15 +193,8 @@ export default {
 
     // 退出登录
     async loginOut() {
-      try {
-        const { data } = await this.Api.loginOut();
-        if (data.code == 0) {
-          window.location.reload();
-          localStorage.clear();
-        }
-      } catch (error) {
-        this.Toast("网络错误");
-      }
+      localStorage.clear();
+      window.location.reload();
     },
 
     // 最近浏览
@@ -218,18 +211,23 @@ export default {
       this.show = true;
       try {
         const { data } = await this.Api.user();
-        if (data.code == 200) {
-          this.username = data.userInfo.username;
-          this.gender = data.userInfo.gender;
-          this.birth = data.userInfo.year + "年" + data.userInfo.month + "月" + data.userInfo.day + "日";
-          this.year = data.userInfo.year;
-          this.month = data.userInfo.month;
-          this.day = data.userInfo.day;
-          this.email = data.userInfo.email;
-          this.id = data.userInfo._id;
-          this.nickname = data.userInfo.nickname;
-        }
+
+                  //if (data.code == 200) {
+          let profile = data[0]
+          console.log( profile )
+
+          this.username = profile.user.username;
+          this.gender = profile.gender;
+          this.birth = profile.birthday//data.userInfo.year + "年" + data.userInfo.month + "月" + data.userInfo.day + "日";
+          this.year = profile.birthday && profile.birthday.substr(0,4);
+          this.month = profile.birthday && profile.birthday.substr(5,2);
+          this.day = profile.birthday && profile.birthday.substr(8,2);
+          this.email = profile.email;
+          this.id = profile.id;
+          this.nickname = profile.nickname;
+        //}
       } catch (error) {
+        console.error( error )
         this.Toast("获取用户信息失败");
       }
     },
@@ -253,22 +251,17 @@ export default {
       let datas = {
         gender: this.gender,
         email: this.email,
-        year: this.year,
-        month: this.month,
-        day: this.day,
+        birthday: this.year+'-'+this.month+'-'+this.day,
         id: this.id,
         nickname: this.nickname
       };
       try {
         const { data } = await this.Api.saveUser(datas);
-        if (data.code == 200) {
+
           this.loading = false;
-          this.setName(data.userInfo);
+          this.setUserInfo(data);
           this.Toast(data.msg);
-        } else {
-          this.Toast(data.msg);
-          this.loading = false;
-        }
+
       } catch (error) {
         this.loading = false;
         this.Toast("修改失败,网络错误");
@@ -288,11 +281,13 @@ export default {
   },
 
   async created() {
+    if( !this.isLogon ) return
+
     try {
       const { data } = await this.Api.getOrderNum();
-      if (data.code == 200) {
-        this.orderNum = data.numList;
-      }
+      //if (data.code == 200) {
+        this.orderNum = data;
+      //}
     } catch (error) {
       this.Toast("网络错误");
     }

@@ -7,22 +7,22 @@
             <van-tab :title="val" v-for="(val,index) in tabs" :key="index">
                 <Scroll v-show="!showFlag" :data='list' ref="scroll" class="scroll">
                     <div class="wap">
-                        <div class="list-warp" v-if="value.status==active" v-for="(value,index) in list" :key="val.order_id"> 
+                        <div class="list-warp" v-if="value.state==active" v-for="(value,index) in list" :key="val.order_id"> 
                             <div class='top border-bottom'>
-                                <div>订单编号: {{value.order_id}}</div>
-                                <div class="order-ok">{{status(value.status)}}</div>
+                                <div>订单编号: {{value.id}}</div>
+                                <div class="order-ok">{{status(value.state)}}</div>
                             </div>
-                            <div class="list" v-for="(val,index) in value.order_list" :key="val._id">
-                                <img class="good-img" :src="val.image_path" :onerror="defaultImg">
-                                <div class="good-title">{{val.name}}</div>
+                            <div class="list" v-for="(val,index) in value.items" :key="val.id">
+                                <img class="good-img" :src="imageUrl(val.good)" :onerror="defaultImg">
+                                <div class="good-title">{{val.good.name}}</div>
                                 <div class="good-count">
-                                    <p>￥{{val.mallPrice}}</p>
-                                    <p class="count">x{{val.count}}</p>
+                                    <p>￥{{val.amount}}</p>
+                                    <p class="count">x{{val.qty}}</p>
                                 </div>
                             </div>
-                            <div class="timre bottom border-top">创建时间: {{value.add_time}}</div>
+                            <div class="timre bottom border-top">创建时间: {{value.created_at}}</div>
                             <div class="bottom">收货地址: {{value.address}}</div>
-                            <div class="bottom">共 {{value.order_list.length}} 件商品   合计: {{value.mallPrice}}</div>
+                            <div class="bottom">共 {{value.items.length}} 件商品   合计: {{value.amount}}</div>
                         </div>
                     </div>
                     <div v-if="!list.length && !showFlag" class="null">
@@ -87,16 +87,19 @@ export default {
             try {
                 this.showFlag = true
                 const {data} = await this.Api.getMyOrder()
-                if (data.code == 200) {
+
                     this.showFlag = false
-                    this.list = data.list
-                } else {
-                    this.showFlag = false
-                }
+                    this.list = data
+                    console.log( data )
+
             } catch (error) {
                 this.Toast('网络错误')
                 this.showFlag = false
             }
+        },
+
+        imageUrl(good) {
+            return 'https://img2.guolele.com/' + ( good.pic_url );
         }
     },
 

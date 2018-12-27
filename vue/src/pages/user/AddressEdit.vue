@@ -9,7 +9,7 @@
                 :show-delete='showDelete'
                 show-set-default
                 show-search-result
-                :addressInfo='addressInfo'
+                :addressInfo='editAddress'
                 :search-result="searchResult"
                 @save="onSave"
                 @delete="onDelete"
@@ -33,12 +33,19 @@ export default {
             searchResult: [],
             back: true,
             areaList: require('js/area.js').default,
-            showDelete: false
+            showDelete: false,
+            editAddress: {},        // 编辑组件的属性名称不同，需要转换
         }
     },
 
     created() {
         if (this.addressInfo) {
+            this.editAddress = {
+                ...this.addressInfo,
+                addressDetail: this.addressInfo.address,
+                areaCode : this.addressInfo.area_code,
+                isDefault: this.addressInfo.is_default
+            }
             this.showDelete = true
         }
     },
@@ -51,27 +58,25 @@ export default {
         async onSave(val) {
             // 以下参数在api接口查看详情
             try {
-                const {data} = await this.Api.postAddress({
+                var addressInfo = {
                         name: val.name,
                         tel: val.tel,
-                        address: val.province + val.city + val.county + val.addressDetail,
-                        isDefault: val.isDefault,
+                        address: val.addressDetail,
+                        is_default: val.isDefault,
                         province: val.province,
                         city: val.city,
                         county: val.county,
-                        addressDetail: val.addressDetail,
-                        areaCode: val.areaCode,
+                        area_code: val.areaCode,
                         id: this.addressInfo ? this.addressInfo._id : undefined  // 修改地址时候要传id
-                })
-                    if (data.code == 200) {
+                }
+                const {data} = await this.Api.postAddress(addressInfo.id, addressInfo)
+
                         this.Toast(data.msg);
                         setTimeout(() => {
                             this.$router.go(-1)
                             this.clearAddress('')
                         }, 1000);
-                    } else {
-                        this.$router.push('/user/login')
-                    }
+
                 
             } catch (error) {
                 this.Toast('网络错误')
@@ -81,15 +86,15 @@ export default {
         async onDelete(val) {
             try {
                 const {data} = await this.Api.deleteAddress(val._id)
-                if (data.code == 200) {
+                //if (data.code == 200) {
                     this.Toast(data.msg);
                     setTimeout(() => {
                         this.$router.go(-1)
                         this.clearAddress('')
                     }, 1000);
-                }else {
-                    this.$router.push('/user/login')
-                }
+                //}else {
+                //    this.$router.push('/user/login')
+                //}
             } catch (error) {
                 this.Toast('网络错误')
             }

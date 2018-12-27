@@ -240,13 +240,13 @@ export default {
             try {
                 this.len = false
                 const {data} = await this.Api.search(value)
-                if (data.code == 200) {
-                    this.serachList = data.list
+                //console.log( data )
+                    this.serachList = data
                     if (!this.serachList.length) {
                         this.len = true
                     }
-                }
             } catch (error) {
+                console.log( error )
                 this.len = false
                 this.Toast('网络错误')
             }
